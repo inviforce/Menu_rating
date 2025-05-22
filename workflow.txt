@@ -1,0 +1,11 @@
+# 1) dataset ko google form ya kisi bhi particular format mein parse karna aur firebase mein store karna hoga parsed data 
+# 	-->firebase ka backend logic withdata parsing and storing for each week
+
+
+2) frontend jisme time according woh data fetch karke dikha dega usme dropdown type for 4 time food with the default dropdown based upon time
+	-->login of the user with name using google 
+	-->front code with react full and data fetch and showing and default dropdown time based wala 
+3) usme user star dega for the food and then it will be stored as number and then the id of that food
+	-->number fetch and storing it in the main db as userid_itemid and rating 
+4) aur phir jo data admin ko milega avg rating for each item on a day ke saath admin view mein hi
+	-->admin view banana hai
