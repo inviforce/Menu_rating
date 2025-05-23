@@ -23,27 +23,35 @@ function App() {
     }
 
     setShow(new_show);
-  }, []); 
+  }, []);
 
-  const [user, setUser] = useState(null); 
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((loggedInUser) => {
-      setUser(loggedInUser); 
+      setUser(loggedInUser);
     });
-    return () => unsubscribe(); 
+    return () => unsubscribe();
   }, []);
 
-  
+  // Sign out handler with error handling
+  const handleSignOut = async () => {
+    try {
+      await auth.signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   return (
     <div className="root">
       {user ? (
         <>
           <div>
-            <h2 className="headingStyle">Welcome, {user.displayName}</h2>
+            <h2 className="headingStyle">Welcome, {user?.displayName || "User"}</h2>
             <HeaderCommon />
-            <DropdownList visibility={show} setVisibility={setShow} name={user.displayName} />
-            <button className="signout" onClick={() => auth.signOut()}>Sign out</button>
+            <DropdownList visibility={show} setVisibility={setShow} name={user?.displayName || "User"} />
+            <button className="signout" onClick={handleSignOut}>Sign out</button>
           </div>
         </>
       ) : (
@@ -54,8 +62,6 @@ function App() {
       )}
     </div>
   );
-
-
 }
 
 export default App;
