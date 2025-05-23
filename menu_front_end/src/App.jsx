@@ -49,7 +49,6 @@ function App() {
         <>
           <div>
             <h2 className="headingStyle">Welcome, {user?.displayName || "User"}</h2>
-            <HeaderCommon />
             <DropdownList visibility={show} setVisibility={setShow} name={user?.displayName || "User"} />
             <button className="signout" onClick={handleSignOut}>Sign out</button>
           </div>

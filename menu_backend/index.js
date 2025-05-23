@@ -32,31 +32,54 @@ app.get('/menu_data', (req, res) => {
     response.on('end', () => {
       try {
         const responseData = JSON.parse(data);
-        
-        if (responseData.documents && responseData.documents.length > 0) {
-          const document = responseData.documents[0];
-          const fields = document.fields.Day.mapValue.fields;
-          
-          const menuData = {};
-         
-          for (const [key, value] of Object.entries(fields)) {
-            if (value.stringValue) {
-              menuData[key] = value.stringValue.split(',').map(item => item.trim());
+        const documents = responseData.documents || [];
+        const currentTime = new Date();
+
+        // Format date as "May 23 2025"
+        const formatDate = (date) =>
+          date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          }).replace(',', '');
+
+        const serverDateStr = formatDate(currentTime);
+        let menuData = {};
+
+        documents.forEach((document) => {
+          const fields = document.fields;
+          if (!fields || !fields.Day || !fields.Day.mapValue) return;
+
+          const innerFields = fields.Day.mapValue.fields;
+          if (!innerFields || !innerFields.Day || !innerFields.Day.timestampValue) return;
+
+          const firebaseDate = new Date(innerFields.Day.timestampValue);
+          const firebaseDateStr = formatDate(firebaseDate);
+
+          if (firebaseDateStr === serverDateStr) {
+            // Extract menu fields (skip "Day")
+            for (const [key, value] of Object.entries(innerFields)) {
+              if (key === 'Day') continue;
+              if (value.stringValue) {
+                menuData[key] = value.stringValue
+                  .split(',')
+                  .map((item) => item.trim());
+              }
             }
           }
+        });
 
-          res.status(200).json(menuData);
-        } else {
-          res.status(404).json({ message: "No menu data found" });
-        }
+        res.status(200).json(menuData);
       } catch (error) {
-        res.status(500).json({ message: "Error parsing response", error: error.message });
+        res
+          .status(500)
+          .json({ message: 'Error parsing response', error: error.message });
       }
     });
   });
 
-  request.on('error', (e) => {
-    res.status(500).json({ message: "Error getting documents", error: e.message });
+  request.on('error', (error) => {
+    res.status(500).json({ message: 'Request failed', error: error.message });
   });
 
   request.end();
@@ -66,7 +89,7 @@ app.post('/menu_rating', (req, res) => {
   const receivedData = req.body;
   console.log('Received:', receivedData);
 
-  // Step 1: Format new data for Firestore
+  // Format new data for Firestore
   const firestoreFormattedData = {
     fields: {
       ratings: {
@@ -84,7 +107,7 @@ app.post('/menu_rating', (req, res) => {
     },
   };
 
-  // Step 2: Build query to check for existing doc
+  // Query for existing docs with matching name and type
   const queryPayload = JSON.stringify({
     structuredQuery: {
       from: [{ collectionId: 'menu_rating' }],
@@ -123,75 +146,109 @@ app.post('/menu_rating', (req, res) => {
     },
   };
 
-  const queryReq = https.request(queryOptions, (queryRes) => {
-    let responseData = '';
-    queryRes.on('data', (chunk) => (responseData += chunk));
-    queryRes.on('end', () => {
-      try {
-        const result = JSON.parse(responseData);
-        const existingDoc = result.find(doc => doc.document);
+  const IST_OFFSET = 330; // minutes
 
-        const proceedToPost = () => {
-          const postData = JSON.stringify(firestoreFormattedData);
-          const postOptions = {
-            hostname: 'firestore.googleapis.com',
-            port: 443,
-            path: `/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/menu_rating?key=${firebaseConfig.apiKey}`,
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Content-Length': Buffer.byteLength(postData),
-            },
-          };
+  const now = new Date();
+  const nowIST = new Date(now.getTime() + IST_OFFSET * 60000);
+  const serverYear = nowIST.getFullYear();
+  const serverMonth = nowIST.getMonth();
+  const serverDate = nowIST.getDate();
 
-          const postReq = https.request(postOptions, (postRes) => {
-            let postResponse = '';
-            postRes.on('data', chunk => (postResponse += chunk));
-            postRes.on('end', () => {
-              res.status(200).json({
-                message: 'New document added after deleting previous (if any)',
-                response: JSON.parse(postResponse),
-              });
-            });
-          });
+  const deleteDocumentsByDate = async (docs) => {
+    const deletePromises = docs.map(doc => {
+      return new Promise((resolve, reject) => {
+        const docName = doc.document.name;
+        const deletePath = `/v1/${docName}?key=${firebaseConfig.apiKey}`;
 
-          postReq.on('error', (err) => {
-            console.error('POST error:', err);
-            res.status(500).json({ message: 'Failed to add new document', error: err.message });
-          });
-
-          postReq.write(postData);
-          postReq.end();
+        const deleteOptions = {
+          hostname: 'firestore.googleapis.com',
+          port: 443,
+          path: deletePath,
+          method: 'DELETE',
         };
 
-        if (existingDoc) {
-          const docName = existingDoc.document.name; 
-          const deletePath = `/v1/${docName}?key=${firebaseConfig.apiKey}`;
-
-          const deleteOptions = {
-            hostname: 'firestore.googleapis.com',
-            port: 443,
-            path: deletePath,
-            method: 'DELETE',
-          };
-
-          const deleteReq = https.request(deleteOptions, (deleteRes) => {
-            deleteRes.on('end', () => {
-              console.log('Previous document deleted');
-              proceedToPost();
-            });
-            deleteRes.on('data', () => {});
+        const deleteReq = https.request(deleteOptions, (deleteRes) => {
+          deleteRes.on('data', () => {}); // consume data to avoid memory leaks
+          deleteRes.on('end', () => {
+            console.log(`Deleted document: ${docName}`);
+            resolve();
           });
+        });
 
-          deleteReq.on('error', (err) => {
-            console.error('DELETE error:', err);
-            res.status(500).json({ message: 'Failed to delete existing document', error: err.message });
-          });
+        deleteReq.on('error', (err) => {
+          console.error('DELETE error:', err);
+          reject(err);
+        });
 
-          deleteReq.end();
-        } else {
-          proceedToPost(); // No match — just insert
+        deleteReq.end();
+      });
+    });
+
+    await Promise.all(deletePromises);
+  };
+
+  const queryReq = https.request(queryOptions, (queryRes) => {
+    let responseData = '';
+
+    queryRes.on('data', (chunk) => (responseData += chunk));
+    queryRes.on('end', async () => {
+      try {
+        const result = JSON.parse(responseData);
+
+        // Filter docs with timestamp matching server date (IST)
+        const matchingDocs = result.filter(entry => {
+          if (!entry.document?.fields?.timestamp?.timestampValue) return false;
+
+          const timestampUTC = new Date(entry.document.fields.timestamp.timestampValue);
+          const timestampIST = new Date(timestampUTC.getTime() + IST_OFFSET * 60000);
+
+          return (
+            timestampIST.getFullYear() === serverYear &&
+            timestampIST.getMonth() === serverMonth &&
+            timestampIST.getDate() === serverDate
+          );
+        });
+
+        if (matchingDocs.length > 0) {
+          try {
+            await deleteDocumentsByDate(matchingDocs);
+          } catch (delErr) {
+            return res.status(500).json({ message: 'Failed to delete existing document(s)', error: delErr.message });
+          }
         }
+
+        // After deleting matched docs, add the new document
+        const postData = JSON.stringify(firestoreFormattedData);
+        const postOptions = {
+          hostname: 'firestore.googleapis.com',
+          port: 443,
+          path: `/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/menu_rating?key=${firebaseConfig.apiKey}`,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData),
+          },
+        };
+
+        const postReq = https.request(postOptions, (postRes) => {
+          let postResponse = '';
+          postRes.on('data', (chunk) => (postResponse += chunk));
+          postRes.on('end', () => {
+            res.status(200).json({
+              message: `New document added${matchingDocs.length > 0 ? ' after deleting previous document(s)' : ''}`,
+              response: JSON.parse(postResponse),
+            });
+          });
+        });
+
+        postReq.on('error', (err) => {
+          console.error('POST error:', err);
+          res.status(500).json({ message: 'Failed to add new document', error: err.message });
+        });
+
+        postReq.write(postData);
+        postReq.end();
+
       } catch (err) {
         console.error('Query parse error:', err.message);
         res.status(500).json({ message: 'Failed to process Firestore query', error: err.message });
@@ -208,7 +265,6 @@ app.post('/menu_rating', (req, res) => {
   queryReq.end();
 });
 
-
 app.post('/checker', (req, res) => {
   const { name } = req.body;
 
@@ -216,6 +272,7 @@ app.post('/checker', (req, res) => {
     return res.status(400).json({ error: 'Missing name in request body' });
   }
 
+  // Only filter by name in Firestore query, no date filter here
   const queryPayload = JSON.stringify({
     structuredQuery: {
       from: [{ collectionId: 'menu_rating' }],
@@ -223,8 +280,8 @@ app.post('/checker', (req, res) => {
         fieldFilter: {
           field: { fieldPath: 'name' },
           op: 'EQUAL',
-          value: { stringValue: name },
-        },
+          value: { stringValue: name }
+        }
       }
     }
   });
@@ -248,8 +305,29 @@ app.post('/checker', (req, res) => {
       try {
         const results = JSON.parse(responseData);
 
-        const ratingsList = results
-          .filter(entry => entry.document && entry.document.fields && entry.document.fields.ratings)
+        // Get current server date in IST (ignore time)
+        const IST_OFFSET = 330; // minutes
+        const now = new Date();
+        const nowIST = new Date(now.getTime() + IST_OFFSET * 60000);
+        const serverYear = nowIST.getFullYear();
+        const serverMonth = nowIST.getMonth();
+        const serverDate = nowIST.getDate();
+
+        // Filter results to only those with matching date in timestamp (IST)
+        const filteredRatings = results
+          .filter(entry => entry.document?.fields?.ratings && entry.document.fields.timestamp?.timestampValue)
+          .filter(entry => {
+            const timestampUTC = new Date(entry.document.fields.timestamp.timestampValue);
+
+            // Convert Firestore UTC timestamp to IST
+            const timestampIST = new Date(timestampUTC.getTime() + IST_OFFSET * 60000);
+
+            return (
+              timestampIST.getFullYear() === serverYear &&
+              timestampIST.getMonth() === serverMonth &&
+              timestampIST.getDate() === serverDate
+            );
+          })
           .map(entry => {
             const ratingFields = entry.document.fields.ratings.mapValue.fields;
             const flatRatings = {};
@@ -261,7 +339,7 @@ app.post('/checker', (req, res) => {
             return flatRatings;
           });
 
-        res.status(200).json(ratingsList.length > 0 ? ratingsList : null);
+        res.status(200).json(filteredRatings.length > 0 ? filteredRatings : null);
       } catch (err) {
         console.error('Parsing error:', err.message);
         res.status(500).json({ error: 'Invalid Firestore response' });
@@ -278,6 +356,113 @@ app.post('/checker', (req, res) => {
   queryReq.end();
 });
 
+app.post('/avg_info', (req, res) => {
+  const { type } = req.body;
+
+  if (!type) {
+    return res.status(400).json({ error: 'Missing type in request body' });
+  }
+
+  const queryPayload = JSON.stringify({
+    structuredQuery: {
+      from: [{ collectionId: 'menu_rating' }],
+      where: {
+        fieldFilter: {
+          field: { fieldPath: 'type' },
+          op: 'EQUAL',
+          value: { stringValue: type }
+        }
+      }
+    }
+  });
+
+  const options = {
+    hostname: 'firestore.googleapis.com',
+    port: 443,
+    path: `/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents:runQuery?key=${firebaseConfig.apiKey}`,
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(queryPayload),
+    },
+  };
+
+  const IST_OFFSET = 330; // minutes
+
+  const queryReq = https.request(options, (queryRes) => {
+    let responseData = '';
+
+    queryRes.on('data', chunk => responseData += chunk);
+    queryRes.on('end', () => {
+      try {
+        const results = JSON.parse(responseData);
+
+        // Current server date in IST (ignore time)
+        const now = new Date();
+        const nowIST = new Date(now.getTime() + IST_OFFSET * 60000);
+        const serverYear = nowIST.getFullYear();
+        const serverMonth = nowIST.getMonth();
+        const serverDate = nowIST.getDate();
+
+        // Filter documents by date = today (IST)
+        const todaysDocs = results
+          .filter(entry => entry.document?.fields?.ratings && entry.document.fields.timestamp?.timestampValue)
+          .filter(entry => {
+            const timestampUTC = new Date(entry.document.fields.timestamp.timestampValue);
+            const timestampIST = new Date(timestampUTC.getTime() + IST_OFFSET * 60000);
+            return (
+              timestampIST.getFullYear() === serverYear &&
+              timestampIST.getMonth() === serverMonth &&
+              timestampIST.getDate() === serverDate
+            );
+          });
+
+        if (todaysDocs.length === 0) {
+          return res.status(200).json({ data: {}, totalCount: 0 });
+        }
+
+        // Accumulate sums and counts for each item
+        const sums = {};
+        const counts = {};
+
+        todaysDocs.forEach(entry => {
+          const ratingFields = entry.document.fields.ratings.mapValue.fields;
+          for (const [key, value] of Object.entries(ratingFields)) {
+            const rating = parseFloat(value.integerValue || value.doubleValue);
+            sums[key] = (sums[key] || 0) + rating;
+            counts[key] = (counts[key] || 0) + 1;
+          }
+        });
+
+        // Compute averages and format result as item: { avg, count }
+        const result = {};
+        for (const key in sums) {
+          result[key] = {
+            avg: sums[key] / counts[key],
+            count: counts[key]
+          };
+        }
+
+        res.status(200).json({
+          data: result,
+          totalCount: todaysDocs.length
+        });
+
+      } catch (err) {
+        console.error('Parsing error:', err.message);
+        res.status(500).json({ error: 'Invalid Firestore response' });
+      }
+    });
+  });
+
+  queryReq.on('error', (err) => {
+    console.error('Query error:', err.message);
+    res.status(500).json({ error: 'Failed to query Firestore' });
+  });
+
+  queryReq.write(queryPayload);
+  queryReq.end();
+});
 
 const PORT = process.env.PORT || 3767;
 app.listen(PORT, () => {
