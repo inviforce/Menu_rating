@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const https = require('https');
 const cors = require('cors');
+const path = require('path');
+
 
 const firebaseConfig = {
   apiKey: process.env.APIKEY,
@@ -464,7 +466,14 @@ app.post('/avg_info', (req, res) => {
   queryReq.end();
 });
 
+
+app.use(express.static(path.join(__dirname, '..', 'menu_front_end', 'dist')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'menu_front_end', 'dist', 'index.html'));
+});
+
 const PORT = process.env.PORT || 3767;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
