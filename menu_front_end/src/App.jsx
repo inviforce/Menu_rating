@@ -1,12 +1,14 @@
 import './App.css';
 import HeaderCommon from './components/header_common';
 import DropdownList from './components/dropdown';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Login from './authentication/login'; 
 import { auth } from './authentication/firebase'; 
+import InstallPWAPopup from './components/InstallPWAPopup';  // <-- import here
 
 function App() {
   const [show, setShow] = useState(Array(4).fill(0));
+  const pwaPopupRef = useRef();
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -34,13 +36,17 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // Sign out handler with error handling
   const handleSignOut = async () => {
     try {
       await auth.signOut();
     } catch (error) {
       console.error("Error signing out:", error);
     }
+  };
+
+  // Function to open PWA install popup
+  const showInstallPopup = () => {
+    pwaPopupRef.current?.open();
   };
 
   return (
@@ -51,6 +57,11 @@ function App() {
             <h2 className="headingStyle">Welcome, {user?.displayName || "User"}</h2>
             <DropdownList visibility={show} setVisibility={setShow} name={user?.displayName || "User"} />
             <button className="signout" onClick={handleSignOut}>Sign out</button>
+
+            {/* Add a button to trigger the install popup */}
+            <button style={{ marginTop: 20 }} onClick={showInstallPopup}>
+              Download / Install App
+            </button>
           </div>
         </>
       ) : (
@@ -59,6 +70,9 @@ function App() {
           <Login />
         </div>
       )}
+
+      {/* PWA install popup */}
+      <InstallPWAPopup ref={pwaPopupRef} />
     </div>
   );
 }
