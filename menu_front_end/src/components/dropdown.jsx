@@ -2,6 +2,16 @@ import { useEffect, useState } from 'react';
 import './components_css/dropdown.css';
 import HeaderCommon from './header_common';
 import Loading from './loading';
+import GetMenuData from '../firebase/fetchMenuData';
+import getAvgRatingsByType from '../firebase/getAvgRating';
+import checkRatingsByName from '../firebase/checkRating';
+import submitMenuRating from '../firebase/submitMenuRating';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBPendkWM0LrYFYnruyqdOwe5-60MdRE7Q",
+  projectId: "menu-4a32c"
+};
+
 
 function DropdownList({ visibility, setVisibility,name }) {
   const items = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'];
@@ -31,40 +41,30 @@ function DropdownList({ visibility, setVisibility,name }) {
     });
   };
 
-  const fetchItemHistory = (type) => {
-  return fetch('http://localhost:3767/avg_info', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-    body: JSON.stringify({ type }),
-  })
-    .then(res => {
-      if (!res.ok) {
-        throw new Error('Failed to fetch item history');
-      }
-      return res.json();
-    })
-    .then(data => {
-      if (data && data.data) {
-        SetItem_hist(prev => ({
+  const fetchItemHistory = async (type, firebaseConfig) => {
+    try {
+      console.log(firebaseConfig.apiKey);
+      const { data } = await getAvgRatingsByType(type, firebaseConfig);
+  
+      if (data) {
+        SetItem_hist((prev) => ({
           ...prev,
-          ...data.data, // merge new item stats into Item_hist
+          ...data, // merge today's avg rating stats into Item_hist
         }));
-       
-        return data.data; // optional return for chaining
+  
+        return data;
       }
-    })
-    .catch(err => {
+    } catch (err) {
       console.error('Item history fetch error:', err.message);
-    });
-};
+    }
+  };
 
 useEffect(() => {
   console.log("Updated Item_hist:", Item_hist);
 }, [Item_hist]);
 
-  const handle_submit = (category) => {
+const handle_submit = async (category) => {
+  try {
     const categoryItems = Data[category];
     const payload = {};
 
@@ -73,40 +73,26 @@ useEffect(() => {
         payload[item] = ratings.hasOwnProperty(item) ? ratings[item] : 0;
       });
     }
-    payload["type"]=category
-    payload["name"]=name
-    return fetch('http://localhost:3767/menu_rating', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-      body: JSON.stringify(payload),
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log('Server response:', data);
-        sethelper(!helper)
-        return data;
-      })
-      .catch(error => {
-        console.error('Submission error:', error.message);
-      });
-  };
+
+    // Add type and name to payload
+    payload.type = category;
+    payload.name = name;
+
+    // Call your Firestore submission function
+    const data = await submitMenuRating(payload, firebaseConfig);
+
+    console.log('Server response:', data);
+    sethelper(!helper);
+
+    return data;
+  } catch (error) {
+    console.error('Submission error:', error.message);
+  }
+};
 
 
  useEffect(() => {
-  fetch('http://localhost:3767/menu_data')
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Failed to fetch menu data');
-      }
-      return response.json();
-    })
+  GetMenuData(firebaseConfig.projectId)
     .then(data => {
       console.log('Menu Data:', data);
       SetData(data); 
@@ -125,50 +111,35 @@ useEffect(() => {
     });
 }, []);
 
-
-useEffect(()=>{
-  console.log("hey")
-
-  fetch('http://localhost:3767/checker', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
-    body: JSON.stringify({ name }), 
-  })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      return response.json();
-    })
+useEffect(() => {
+  console.log("hey");
+  // Assuming `name` and `firebaseConfig` are available in scope
+  checkRatingsByName(name, firebaseConfig)
     .then(data => {
       if (data) {
         const flattened = Object.assign({}, ...data);
         setRatings(prevRatings => ({
-        ...prevRatings,
-        ...Object.fromEntries(
-          Object.entries(flattened).filter(([key]) => key in prevRatings)
-        )
-      }));
-      if (Data) {
-        Object.keys(Data).forEach(category => {
-          fetchItemHistory(category);
-        });
-      }
-      setisAppready(true)
+          ...prevRatings,
+          ...Object.fromEntries(
+            Object.entries(flattened).filter(([key]) => key in prevRatings)
+          )
+        }));
+
+        if (Data) {
+          Object.keys(Data).forEach(category => {
+            fetchItemHistory(category, firebaseConfig);
+          });
+        }
+        setisAppready(true);
       } else {
         console.log('No ratings found for', name);
-        setisAppready(true)
-        
+        setisAppready(true);
       }
-      }
-    )
+    })
     .catch(error => {
       console.error('Ratings fetch error:', error.message);
     });
-    
-},[helper,dataLoaded])
+}, [helper, dataLoaded]);
 
   return (
     <>

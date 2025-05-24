@@ -1,31 +1,10 @@
-import https from 'https';
-
-const IST_OFFSET = 330;
-
-function toIST(date) {
-  return new Date(date.getTime() + IST_OFFSET * 60000);
-}
-
-function makeHttpsRequest(options, postData = null) {
-  return new Promise((resolve, reject) => {
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => (data += chunk));
-      res.on('end', () => resolve({ statusCode: res.statusCode, data }));
-    });
-    req.on('error', reject);
-    if (postData) req.write(postData);
-    req.end();
-  });
-}
-
 export default async function getAvgRatingsByType(type, firebaseConfig) {
   if (!type) throw new Error('Type is required');
   if (!firebaseConfig?.projectId || !firebaseConfig?.apiKey) {
     throw new Error('Valid firebaseConfig with projectId and apiKey is required');
   }
 
-  const queryPayload = JSON.stringify({
+  const queryPayload = {
     structuredQuery: {
       from: [{ collectionId: 'menu_rating' }],
       where: {
@@ -36,25 +15,28 @@ export default async function getAvgRatingsByType(type, firebaseConfig) {
         },
       },
     },
-  });
-
-  const options = {
-    hostname: 'firestore.googleapis.com',
-    port: 443,
-    path: `/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents:runQuery?key=${firebaseConfig.apiKey}`,
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Content-Length': Buffer.byteLength(queryPayload),
-    },
   };
 
-  const { statusCode, data } = await makeHttpsRequest(options, queryPayload);
-  if (statusCode !== 200) {
-    throw new Error(`Firestore query failed with status ${statusCode}`);
+  const response = await fetch(
+    `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents:runQuery?key=${firebaseConfig.apiKey}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(queryPayload),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Firestore query failed: ${response.statusText}`);
   }
 
-  const results = JSON.parse(data);
+  const results = await response.json();
+
+  // Convert UTC to IST
+  const IST_OFFSET = 330;
+  const toIST = (date) => new Date(date.getTime() + IST_OFFSET * 60000);
 
   const nowIST = toIST(new Date());
   const currentYear = nowIST.getFullYear();
@@ -62,8 +44,8 @@ export default async function getAvgRatingsByType(type, firebaseConfig) {
   const currentDate = nowIST.getDate();
 
   const todaysDocs = results
-    .filter(entry => entry.document?.fields?.ratings && entry.document.fields.timestamp?.timestampValue)
-    .filter(entry => {
+    .filter((entry) => entry.document?.fields?.ratings && entry.document.fields.timestamp?.timestampValue)
+    .filter((entry) => {
       const ts = new Date(entry.document.fields.timestamp.timestampValue);
       const tsIST = toIST(ts);
       return (

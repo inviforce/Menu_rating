@@ -467,11 +467,6 @@ app.post('/avg_info', (req, res) => {
 });
 
 
-app.use(express.static(path.join(__dirname, '..', 'menu_front_end', 'dist')));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'menu_front_end', 'dist', 'index.html'));
-});
 
 const PORT = process.env.PORT || 3767;
 app.listen(PORT, () => {

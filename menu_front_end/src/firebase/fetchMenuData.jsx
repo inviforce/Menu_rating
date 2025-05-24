@@ -1,4 +1,4 @@
-async function getMenuData(projectId) {
+async function GetMenuData(projectId) {
   if (!projectId) throw new Error('projectId is required');
 
   const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/menu_data`;
@@ -9,21 +9,13 @@ async function getMenuData(projectId) {
   }
 
   const data = await response.json();
-
   const documents = data.documents || [];
-  const currentTime = new Date();
+  const now = new Date();
 
-  // Format date as "May 23 2025" (no comma)
-  const formatDate = (date) =>
-    date
-      .toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
-      .replace(',', '');
+  const serverYear = now.getFullYear();
+  const serverMonth = now.getMonth();
+  const serverDate = now.getDate();
 
-  const serverDateStr = formatDate(currentTime);
   let menuData = {};
 
   for (const document of documents) {
@@ -34,10 +26,12 @@ async function getMenuData(projectId) {
     if (!innerFields || !innerFields.Day || !innerFields.Day.timestampValue) continue;
 
     const firebaseDate = new Date(innerFields.Day.timestampValue);
-    const firebaseDateStr = formatDate(firebaseDate);
 
-    if (firebaseDateStr === serverDateStr) {
-      // Extract menu fields except 'Day'
+    const fbYear = firebaseDate.getFullYear();
+    const fbMonth = firebaseDate.getMonth();
+    const fbDate = firebaseDate.getDate();
+
+    if (fbYear === serverYear && fbMonth === serverMonth && fbDate === serverDate) {
       for (const [key, value] of Object.entries(innerFields)) {
         if (key === 'Day') continue;
         if (value.stringValue) {
@@ -52,4 +46,4 @@ async function getMenuData(projectId) {
   return menuData;
 }
 
-export default getMenuData
+export default GetMenuData;
