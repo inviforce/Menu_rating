@@ -4,7 +4,7 @@ import DropdownList from './components/dropdown';
 import { useEffect, useState, useRef } from 'react';
 import Login from './authentication/login'; 
 import { auth } from './authentication/firebase'; 
-import InstallPWAPopup from './components/InstallPWAPopup';  // <-- import here
+import InstallPWAPopup from './components/pwa_installer';  // <-- import here
 
 function App() {
   const [show, setShow] = useState(Array(4).fill(0));
