@@ -51,6 +51,7 @@ function App() {
 
   return (
     <div className="root">
+      <InstallPWAPopup />
       {user ? (
         <>
           <div>
@@ -70,9 +71,6 @@ function App() {
           <Login />
         </div>
       )}
-
-      {/* PWA install popup */}
-      <InstallPWAPopup ref={pwaPopupRef} />
     </div>
   );
 }

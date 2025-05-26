@@ -1,64 +1,48 @@
-import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useState } from 'react';
 
-const InstallPWAPopup = forwardRef((props, ref) => {
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
+const InstallPWAPopup = () => {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     const handler = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
+      e.preventDefault(); // Prevent the default mini-infobar
+      console.log('PWA install is available');
+      setVisible(true);
+
+      // Auto-hide after 10 seconds
+      setTimeout(() => setVisible(false), 10000);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  useImperativeHandle(ref, () => ({
-    open: () => {
-      if (deferredPrompt) setVisible(true);
-      else alert('PWA install not available');
-    }
-  }));
-
-  const handleInstallClick = () => {
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then((choiceResult) => {
-      setVisible(false);
-      if (choiceResult.outcome === 'accepted') {
-        console.log('User accepted the install prompt');
-      } else {
-        console.log('User dismissed the install prompt');
-      }
-      setDeferredPrompt(null);
-    });
-  };
-
   if (!visible) return null;
 
   return (
     <div style={{
       position: 'fixed',
-      top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 9999,
+      bottom: 20,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      backgroundColor: '#fff',
+      padding: '12px 20px',
+      borderRadius: '8px',
+      boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+      zIndex: 10000,
+      textAlign: 'center',
+      maxWidth: '90%',
     }}>
-      <div style={{
-        backgroundColor: 'white',
-        padding: 20,
-        borderRadius: 8,
-        textAlign: 'center',
-        minWidth: 300,
-      }}>
-        <p>Install this app on your device?</p>
-        <button onClick={handleInstallClick}>Install</button>
-        <button onClick={() => setVisible(false)} style={{ marginLeft: 10 }}>Cancel</button>
-      </div>
+      <span style={{ marginRight: 10 }}>This app can be installed from your browser menu.</span>
+      <button onClick={() => setVisible(false)} style={{
+        background: 'transparent',
+        border: 'none',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+        fontSize: '16px',
+      }}>×</button>
     </div>
   );
-});
+};
 
 export default InstallPWAPopup;
