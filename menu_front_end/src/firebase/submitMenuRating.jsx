@@ -4,6 +4,7 @@ async function deleteDocument(docName, firebaseConfig) {
   if (!res.ok) {
     throw new Error(`Failed to delete document ${docName}: ${res.statusText}`);
   }
+  
 }
 
 export default async function submitMenuRating(receivedData, firebaseConfig) {
@@ -91,6 +92,7 @@ export default async function submitMenuRating(receivedData, firebaseConfig) {
 
   for (const doc of matchingDocs) {
     const docName = doc.document.name;
+    //console.log("a docuemtn is being dleted",docName)
     await deleteDocument(docName, firebaseConfig);
   }
 

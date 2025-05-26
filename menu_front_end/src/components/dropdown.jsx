@@ -19,6 +19,7 @@ function DropdownList({ visibility, setVisibility, name }) {
   const [ratings, setRatings] = useState({});
   const [avgStats, setAvgStats] = useState({});
   const [loading, setLoading] = useState(true);
+  const [submitDisabled, setSubmitDisabled] = useState(false);
 
   const toggleItem = (index) => {
     const updated = [...visibility];
@@ -65,7 +66,6 @@ function DropdownList({ visibility, setVisibility, name }) {
             Object.entries(previousRatings).filter(([key]) => key in prev)
           ),
         }));
-        console.log("hey",ratings)
       }
     } catch (error) {
       console.error('Ratings fetch error:', error.message);
@@ -82,7 +82,6 @@ function DropdownList({ visibility, setVisibility, name }) {
           ...data,
         }));
       }
-      console.log("dropdown",data)
     } catch (err) {
       console.error(`Error fetching stats for ${category}:`, err.message);
     }
@@ -92,6 +91,8 @@ function DropdownList({ visibility, setVisibility, name }) {
   const handleSubmit = async (category) => {
     try {
       if (!menuData || !menuData[category]) return;
+
+      setSubmitDisabled(true);  // Disable the button immediately
 
       const payload = {
         type: category,
@@ -104,12 +105,19 @@ function DropdownList({ visibility, setVisibility, name }) {
       });
 
       const response = await submitMenuRating(payload, firebaseConfig);
-      console.log('Server response:', response);
+      //console.log('Server response:', response);
 
       // Refresh averages after submission
       await fetchAvgRatings(category);
+
+      // Re-enable submit button after 5 seconds
+      setTimeout(() => {
+        setSubmitDisabled(false);
+      }, 1500);
+
     } catch (error) {
       console.error('Submission error:', error.message);
+      setSubmitDisabled(false);  // Re-enable immediately on error
     }
   };
 
@@ -174,7 +182,14 @@ function DropdownList({ visibility, setVisibility, name }) {
                     })}
                   </ul>
                 )}
-                <button id="submit_button" onClick={() => handleSubmit(category)}>Submit</button>
+                <button
+                  id="submit_button"
+                  onClick={() => handleSubmit(category)}
+                  disabled={submitDisabled}
+                  style={{ cursor: submitDisabled ? 'not-allowed' : 'pointer', opacity: submitDisabled ? 0.6 : 1 }}
+                >
+                  Submit
+                </button>
               </div>
             </li>
           ))}

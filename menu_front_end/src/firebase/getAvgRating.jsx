@@ -91,6 +91,6 @@ export default async function getAvgRatingsByType(type, firebaseConfig) {
     flippedResult[flippedKey] = result[key];
   }
 
-  console.log(flippedResult);
+  //console.log(flippedResult);
   return { data: flippedResult, totalCount: todaysDocs.length };
 }
