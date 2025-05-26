@@ -20,7 +20,7 @@ function DropdownList({ visibility, setVisibility, name }) {
   const [avgStats, setAvgStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [submitDisabled, setSubmitDisabled] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);  // <-- New state added
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const toggleItem = (index) => {
     const updated = [...visibility];
@@ -67,6 +67,15 @@ function DropdownList({ visibility, setVisibility, name }) {
             Object.entries(previousRatings).filter(([key]) => key in prev)
           ),
         }));
+      } else {
+        // Explicitly reset all ratings to zero if no previous ratings found
+        setRatings((prev) => {
+          const resetRatings = {};
+          Object.keys(prev).forEach(key => {
+            resetRatings[key] = 0;
+          });
+          return resetRatings;
+        });
       }
     } catch (error) {
       console.error('Ratings fetch error:', error.message);
@@ -94,7 +103,7 @@ function DropdownList({ visibility, setVisibility, name }) {
       if (!menuData || !menuData[category]) return;
 
       setSubmitDisabled(true);
-      setIsSubmitting(true);  // <-- Set submitting true
+      setIsSubmitting(true);
 
       const payload = {
         type: category,
@@ -107,7 +116,6 @@ function DropdownList({ visibility, setVisibility, name }) {
       });
 
       const response = await submitMenuRating(payload, firebaseConfig);
-      //console.log('Server response:', response);
 
       // Refresh averages after submission
       await fetchAvgRatings(category);
@@ -115,13 +123,13 @@ function DropdownList({ visibility, setVisibility, name }) {
       // Re-enable submit button after 1.5 seconds
       setTimeout(() => {
         setSubmitDisabled(false);
-        setIsSubmitting(false);  // <-- Set submitting false
+        setIsSubmitting(false);
       }, 1500);
 
     } catch (error) {
       console.error('Submission error:', error.message);
       setSubmitDisabled(false);
-      setIsSubmitting(false);  // <-- Set submitting false on error
+      setIsSubmitting(false);
     }
   };
 
