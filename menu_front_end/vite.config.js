@@ -8,9 +8,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'My React PWA',
-        short_name: 'ReactPWA',
-        description: 'My React Progressive Web App',
+        name: 'Menu Rating',
+        short_name: 'Menu Rating',
+        description: 'Menu Rating App',
         start_url: '/',
         display: 'standalone',
         background_color: '#ffffff',
