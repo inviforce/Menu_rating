@@ -6,10 +6,11 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'autoUpdate', // Automatically update the service worker
+      injectRegister: 'auto',     // Auto inject registration code into your app
       manifest: {
-        name: 'Menu Rating_Admin',
-        short_name: 'Menu Rating_Admin',
+        name: 'Menu Rating',
+        short_name: 'Menu Rating',
         description: 'Menu Rating App',
         start_url: '/',
         display: 'standalone',
@@ -17,11 +18,6 @@ export default defineConfig({
         theme_color: '#000000',
         orientation: 'portrait',
         icons: [
-          {
-            src: '/favicon.ico',
-            sizes: '48x48',
-            type: 'image/x-icon',
-          },
           {
             src: '/logo192.png',
             sizes: '192x192',
@@ -31,9 +27,12 @@ export default defineConfig({
             src: '/logo512.png',
             sizes: '512x512',
             type: 'image/png',
-          },
+          }
         ],
       },
+      includeAssets: [
+        'favicon.ico', // Ensure favicon is included in the build
+      ]
     }),
   ],
 })
