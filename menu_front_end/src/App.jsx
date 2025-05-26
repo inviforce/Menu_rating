@@ -6,12 +6,12 @@ import Login from './authentication/login';
 import { auth } from './authentication/firebase';
 import InstallPWAPopup from './components/pwa_installer';
 
-// ✅ Time-based visibility logic initialized BEFORE first render
+
 const getInitialVisibility = () => {
   const hour = new Date().getHours();
   const new_show = Array(4).fill(0);
 
-  if (hour >= 6 && hour < 12) {
+  if (hour >= 8 && hour < 12) {
     new_show[0] = 1; // Breakfast
   } else if (hour >= 12 && hour < 15) {
     new_show[1] = 1; // Lunch
@@ -27,7 +27,6 @@ const getInitialVisibility = () => {
 function App() {
   const [show, setShow] = useState(getInitialVisibility);
   const [user, setUser] = useState(null);
-  const pwaPopupRef = useRef();
 
   // ✅ Firebase auth listener
   useEffect(() => {
