@@ -53,10 +53,11 @@ function App() {
         <>
           <div>
             <h2 className="headingStyle">Welcome, {user?.displayName || "User"}</h2>
-            <DropdownList visibility={show} setVisibility={setShow} name={user?.displayName || "User"} />
+            {/* Only render DropdownList once show is initialized */}
+            {show.some(val => val === 1) && (
+              <DropdownList visibility={show} setVisibility={setShow} name={user?.displayName || "User"} />
+            )}
             <button className="signout" onClick={handleSignOut}>Sign out</button>
-
-           
           </div>
         </>
       ) : (
