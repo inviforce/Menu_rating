@@ -45,13 +45,10 @@ function App() {
   };
 
   // Function to open PWA install popup
-  const showInstallPopup = () => {
-    pwaPopupRef.current?.open();
-  };
+
 
   return (
     <div className="root">
-      <InstallPWAPopup />
       {user ? (
         <>
           <div>
@@ -68,6 +65,8 @@ function App() {
           <Login />
         </div>
       )}
+      
+      <InstallPWAPopup />
     </div>
   );
 }
