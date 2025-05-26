@@ -1,46 +1,87 @@
 import React, { useEffect, useState } from 'react';
 
 const InstallPWAPopup = () => {
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const handler = (e) => {
+    const handleBeforeInstallPrompt = (e) => {
       e.preventDefault(); // Prevent the default mini-infobar
-      console.log('PWA install is available');
-      setVisible(true);
-
-      // Auto-hide after 10 seconds
-      setTimeout(() => setVisible(false), 10000);
+      setDeferredPrompt(e); // Save the event for later
+      setVisible(true); // Show our custom popup
     };
 
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt(); // Show browser install prompt
+
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      console.log('User accepted the install prompt');
+    } else {
+      console.log('User dismissed the install prompt');
+    }
+
+    setDeferredPrompt(null);
+    setVisible(false); // Hide custom popup
+  };
+
+  const handleCancel = () => {
+    setVisible(false);
+  };
 
   if (!visible) return null;
 
   return (
     <div style={{
       position: 'fixed',
-      bottom: 20,
-      left: '50%',
-      transform: 'translateX(-50%)',
-      backgroundColor: '#fff',
-      padding: '12px 20px',
-      borderRadius: '8px',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-      zIndex: 10000,
-      textAlign: 'center',
-      maxWidth: '90%',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 9999,
     }}>
-      <span style={{ marginRight: 10 }}>This app can be installed from your browser menu.</span>
-      <button onClick={() => setVisible(false)} style={{
-        background: 'transparent',
-        border: 'none',
-        fontWeight: 'bold',
-        cursor: 'pointer',
-        fontSize: '16px',
-      }}>×</button>
+      <div style={{
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 8,
+        textAlign: 'center',
+        minWidth: 300,
+      }}>
+        <p>Install this app on your device?</p>
+        <div style={{ marginTop: 10 }}>
+          <button onClick={handleInstall} style={{
+            marginRight: 10,
+            padding: '6px 12px',
+            backgroundColor: '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: 4,
+            cursor: 'pointer'
+          }}>
+            Install
+          </button>
+          <button onClick={handleCancel} style={{
+            padding: '6px 12px',
+            backgroundColor: '#ccc',
+            color: '#333',
+            border: 'none',
+            borderRadius: 4,
+            cursor: 'pointer'
+          }}>
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

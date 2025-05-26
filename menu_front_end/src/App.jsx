@@ -59,10 +59,7 @@ function App() {
             <DropdownList visibility={show} setVisibility={setShow} name={user?.displayName || "User"} />
             <button className="signout" onClick={handleSignOut}>Sign out</button>
 
-            {/* Add a button to trigger the install popup */}
-            <button style={{ marginTop: 20 }} onClick={showInstallPopup}>
-              Download / Install App
-            </button>
+           
           </div>
         </>
       ) : (
