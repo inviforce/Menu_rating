@@ -28,6 +28,41 @@ function DropdownList({ visibility, setVisibility, name }) {
     setVisibility(updated);
   };
 
+  const askForNotificationPermission = async () => {
+    if (!('Notification' in window)) {
+      alert('This browser does not support notifications.');
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      console.log('🔔 Notification permission granted');
+      // (Optional) Show a welcome notification
+      new Notification('Thanks!', {
+        body: 'Notifications are now enabled.',
+      });
+    } else if (permission === 'denied') {
+      console.log('🚫 Notification permission denied');
+    } else {
+      console.log('🔄 Notification dismissed');
+    }
+  };
+
+  useEffect(() => {
+    const handleAppInstalled = () => {
+      console.log('✅ App installed as PWA!');
+      setTimeout(() => {
+        askForNotificationPermission();
+      }, 1000); // Ask 1 second after install
+    };
+
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
   // Handle star click with compound key "category|item"
   const handleStarClick = useCallback((item, category, starIndex) => {
     const key = `${category}|${item}`;
