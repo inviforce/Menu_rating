@@ -6,6 +6,7 @@ import GetMenuData from '../firebase/fetchMenuData';
 import getAvgRatingsByType from '../firebase/getAvgRating';
 import checkRatingsByName from '../firebase/checkRating';
 import submitMenuRating from '../firebase/submitMenuRating';
+import App_1 from './test'
 
 const firebaseConfig = {
   apiKey: "AIzaSyBPendkWM0LrYFYnruyqdOwe5-60MdRE7Q",
@@ -231,6 +232,7 @@ function DropdownList({ visibility, setVisibility, name }) {
                     })}
                   </ul>
                 )}
+                <App_1/>
                 <button
                   id="submit_button"
                   onClick={() => handleSubmit(category)}
