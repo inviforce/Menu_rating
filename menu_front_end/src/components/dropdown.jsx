@@ -20,6 +20,7 @@ function DropdownList({ visibility, setVisibility, name }) {
   const [avgStats, setAvgStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [submitDisabled, setSubmitDisabled] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);  // <-- New state added
 
   const toggleItem = (index) => {
     const updated = [...visibility];
@@ -92,7 +93,8 @@ function DropdownList({ visibility, setVisibility, name }) {
     try {
       if (!menuData || !menuData[category]) return;
 
-      setSubmitDisabled(true);  // Disable the button immediately
+      setSubmitDisabled(true);
+      setIsSubmitting(true);  // <-- Set submitting true
 
       const payload = {
         type: category,
@@ -110,14 +112,16 @@ function DropdownList({ visibility, setVisibility, name }) {
       // Refresh averages after submission
       await fetchAvgRatings(category);
 
-      // Re-enable submit button after 5 seconds
+      // Re-enable submit button after 1.5 seconds
       setTimeout(() => {
         setSubmitDisabled(false);
+        setIsSubmitting(false);  // <-- Set submitting false
       }, 1500);
 
     } catch (error) {
       console.error('Submission error:', error.message);
-      setSubmitDisabled(false);  // Re-enable immediately on error
+      setSubmitDisabled(false);
+      setIsSubmitting(false);  // <-- Set submitting false on error
     }
   };
 
@@ -188,7 +192,7 @@ function DropdownList({ visibility, setVisibility, name }) {
                   disabled={submitDisabled}
                   style={{ cursor: submitDisabled ? 'not-allowed' : 'pointer', opacity: submitDisabled ? 0.6 : 1 }}
                 >
-                  Submit
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
                 </button>
               </div>
             </li>
