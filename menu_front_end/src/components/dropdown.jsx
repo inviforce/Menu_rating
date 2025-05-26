@@ -30,20 +30,27 @@ function DropdownList({ visibility, setVisibility, name }) {
   };
 
   const askForNotificationPermission = async () => {
-    if (!('Notification' in window)) {
-      console.warn('Notifications not supported in this browser.');
-      return;
-    }
+    if ('Notification' in window && navigator.serviceWorker) {
+        const permission = await Notification.requestPermission();
 
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-      console.log('✅ Notifications enabled');
-      new Notification('✅ Notifications enabled!', {
-        body: 'You’ll now get menu updates.',
-      });
-    } else {
-      console.log('❌ Notifications denied or dismissed');
-    }
+        if (permission === 'granted') {
+          const registration = await navigator.serviceWorker.getRegistration();
+          if (registration) {
+            registration.showNotification('✅ Notification Test', {
+              body: 'This is a working mobile-friendly notification!',
+              icon: '/icon-192x192.png', // Optional but recommended
+              vibrate: [100, 50, 100],
+              tag: 'test-notification',
+              renotify: true,
+            });
+          } else {
+            console.error('No service worker registration found.');
+          }
+        } else {
+          console.log('Notification permission denied.');
+        }
+      }
+
   };
 
   const isStandaloneMode = () => {
