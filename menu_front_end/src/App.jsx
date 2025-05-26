@@ -51,6 +51,46 @@ function App() {
     }
   };
 
+  useEffect(() => {
+  let intervalId;
+
+  const showNotification = async () => {
+      if (Notification.permission !== 'granted') {
+        console.log('❌ Notification permission not granted');
+        return;
+      }
+
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration) {
+        const now = new Date().toLocaleTimeString();
+        registration.showNotification('📱 Current Time', {
+          body: `It's now ${now}`,
+          icon: '/icon-192x192.png',
+          tag: 'time-update',
+          renotify: true
+        });
+      } else {
+        console.log('❌ No service worker registration found');
+      }
+    };
+
+    const startInterval = async () => {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        intervalId = setInterval(showNotification, 10000); // every 10 seconds
+      } else {
+        console.log('❌ Notification permission denied');
+      }
+    };
+
+    startInterval();
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
+
+
   return (
     <div className="root">
       {user ? (

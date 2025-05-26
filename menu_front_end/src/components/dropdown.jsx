@@ -6,7 +6,6 @@ import GetMenuData from '../firebase/fetchMenuData';
 import getAvgRatingsByType from '../firebase/getAvgRating';
 import checkRatingsByName from '../firebase/checkRating';
 import submitMenuRating from '../firebase/submitMenuRating';
-import App_1 from './test'
 
 const firebaseConfig = {
   apiKey: "AIzaSyBPendkWM0LrYFYnruyqdOwe5-60MdRE7Q",
@@ -29,49 +28,7 @@ function DropdownList({ visibility, setVisibility, name }) {
     setVisibility(updated);
   };
 
-  const askForNotificationPermission = async () => {
-    if ('Notification' in window && navigator.serviceWorker) {
-        const permission = await Notification.requestPermission();
 
-        if (permission === 'granted') {
-          const registration = await navigator.serviceWorker.getRegistration();
-          if (registration) {
-            registration.showNotification('✅ Notification Test', {
-              body: 'This is a working mobile-friendly notification!',
-              icon: '/icon-192x192.png', // Optional but recommended
-              vibrate: [100, 50, 100],
-              tag: 'test-notification',
-              renotify: true,
-            });
-          } else {
-            console.error('No service worker registration found.');
-          }
-        } else {
-          console.log('Notification permission denied.');
-        }
-      }
-
-  };
-
-  const isStandaloneMode = () => {
-    return window.matchMedia('(display-mode: standalone)').matches ||
-          window.navigator.standalone === true; // For iOS Safari
-  };
-
-  useEffect(() => {
-    if (isStandaloneMode()) {
-      console.log('📱 App is running in standalone mode (installed PWA)');
-      
-      // Ask only if permission has not already been granted or denied
-      if (Notification.permission === 'default') {
-        setTimeout(() => {
-          askForNotificationPermission();
-        }, 1000); // Delay to avoid immediately prompting on open
-      }
-    } else {
-      console.log('🌐 App is running in browser tab. Do not ask for notifications.');
-    }
-  }, []);
 
   // Handle star click with compound key "category|item"
   const handleStarClick = useCallback((item, category, starIndex) => {
@@ -239,7 +196,6 @@ function DropdownList({ visibility, setVisibility, name }) {
                     })}
                   </ul>
                 )}
-                <App_1/>
                 <button
                   id="submit_button"
                   onClick={() => handleSubmit(category)}
