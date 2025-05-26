@@ -64,10 +64,14 @@ export default async function getAvgRatingsByType(type, firebaseConfig) {
 
   for (const entry of todaysDocs) {
     const ratings = entry.document.fields.ratings.mapValue.fields;
-    for (const [key, value] of Object.entries(ratings)) {
+    const docType = entry.document.fields.type?.stringValue || '';
+
+    for (const [item, value] of Object.entries(ratings)) {
       const num = parseFloat(value.integerValue || value.doubleValue);
-      sums[key] = (sums[key] || 0) + num;
-      counts[key] = (counts[key] || 0) + 1;
+      // Compose key as item|type for aggregation
+      const compoundKey = `${item}|${docType}`;
+      sums[compoundKey] = (sums[compoundKey] || 0) + num;
+      counts[compoundKey] = (counts[compoundKey] || 0) + 1;
     }
   }
 
@@ -79,5 +83,14 @@ export default async function getAvgRatingsByType(type, firebaseConfig) {
     };
   }
 
-  return { data: result, totalCount: todaysDocs.length };
+  // Flip keys from item|type to type|item before returning
+  const flippedResult = {};
+  for (const key in result) {
+    const [item, type] = key.split('|');
+    const flippedKey = `${type}|${item}`;
+    flippedResult[flippedKey] = result[key];
+  }
+
+  console.log(flippedResult);
+  return { data: flippedResult, totalCount: todaysDocs.length };
 }

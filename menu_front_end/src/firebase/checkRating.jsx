@@ -42,8 +42,10 @@ async function checkRatingsByName(name, firebaseConfig) {
   const serverMonth = now.getMonth();
   const serverDate = now.getDate();
 
-  // Filter results where ratings exist and timestamp matches current local date
-  const filteredRatings = results
+  const flatRatings = {};
+
+  // Filter results where ratings exist and timestamp matches current date
+  results
     .filter(entry => entry.document?.fields?.ratings && entry.document.fields.timestamp?.timestampValue)
     .filter(entry => {
       const timestamp = new Date(entry.document.fields.timestamp.timestampValue);
@@ -53,18 +55,18 @@ async function checkRatingsByName(name, firebaseConfig) {
         timestamp.getDate() === serverDate
       );
     })
-    .map(entry => {
-      const ratingFields = entry.document.fields.ratings.mapValue.fields;
-      const flatRatings = {};
+    .forEach(entry => {
+      const type = entry.document.fields.type?.stringValue || '';
+      const ratings = entry.document.fields.ratings.mapValue.fields;
 
-      for (const [key, value] of Object.entries(ratingFields)) {
-        flatRatings[key] = parseFloat(value.integerValue || value.doubleValue);
+      for (const [item, value] of Object.entries(ratings)) {
+        const score = parseFloat(value.integerValue || value.doubleValue);
+        const compoundKey = `${type}|${item}`;
+        flatRatings[compoundKey] = score;
       }
-
-      return flatRatings;
     });
 
-  return filteredRatings.length > 0 ? filteredRatings : null;
+  return Object.keys(flatRatings).length > 0 ? flatRatings : null;
 }
 
 export default checkRatingsByName;

@@ -26,72 +26,88 @@ function DropdownList({ visibility, setVisibility, name }) {
     setVisibility(updated);
   };
 
-  const handleStarClick = useCallback((item, starIndex) => {
+  // Handle star click with compound key "category|item"
+  const handleStarClick = useCallback((item, category, starIndex) => {
+    const key = `${category}|${item}`;
     setRatings((prev) => ({
       ...prev,
-      [item]: prev[item] === starIndex + 1 ? 0 : starIndex + 1,
+      [key]: prev[key] === starIndex + 1 ? 0 : starIndex + 1,
     }));
   }, []);
 
+  // Fetch menu data and initialize ratings keys with compound keys
   const fetchMenuAndInitialize = useCallback(async () => {
     try {
       const data = await GetMenuData(firebaseConfig.projectId);
       setMenuData(data);
 
       const initialRatings = {};
-      Object.values(data).flat().forEach(item => initialRatings[item] = 0);
+      Object.entries(data).forEach(([category, items]) => {
+        items.forEach(item => {
+          const key = `${category}|${item}`;
+          initialRatings[key] = 0;
+        });
+      });
       setRatings(initialRatings);
     } catch (error) {
       console.error('Menu data error:', error.message);
     }
   }, []);
 
+  // Fetch previous ratings and merge them using compound keys
   const fetchPreviousRatings = useCallback(async () => {
     try {
       const previousRatings = await checkRatingsByName(name, firebaseConfig);
       if (previousRatings) {
-        const flattened = Object.assign({}, ...previousRatings);
         setRatings((prev) => ({
           ...prev,
           ...Object.fromEntries(
-            Object.entries(flattened).filter(([key]) => key in prev)
-          )
+            Object.entries(previousRatings).filter(([key]) => key in prev)
+          ),
         }));
+        console.log("hey",ratings)
       }
     } catch (error) {
       console.error('Ratings fetch error:', error.message);
     }
   }, [name]);
 
+  // Fetch average ratings for a category and merge into avgStats
   const fetchAvgRatings = useCallback(async (category) => {
     try {
       const { data } = await getAvgRatingsByType(category, firebaseConfig);
       if (data) {
         setAvgStats((prev) => ({
           ...prev,
-          ...data
+          ...data,
         }));
       }
+      console.log("dropdown",data)
     } catch (err) {
       console.error(`Error fetching stats for ${category}:`, err.message);
     }
   }, []);
 
+  // Submit ratings by category, transforming compound keys back into item keys
   const handleSubmit = async (category) => {
     try {
+      if (!menuData || !menuData[category]) return;
+
       const payload = {
         type: category,
         name,
       };
 
       menuData[category].forEach(item => {
-        payload[item] = ratings[item] || 0;
+        const key = `${category}|${item}`;
+        payload[item] = ratings[key] || 0;
       });
 
       const response = await submitMenuRating(payload, firebaseConfig);
       console.log('Server response:', response);
 
-      await fetchAvgRatings(category); // update stats immediately
+      // Refresh averages after submission
+      await fetchAvgRatings(category);
     } catch (error) {
       console.error('Submission error:', error.message);
     }
@@ -126,32 +142,36 @@ function DropdownList({ visibility, setVisibility, name }) {
               <div className={`dropdown_content ${visibility[index] === 1 ? 'open' : ''}`}>
                 {menuData?.[category] && (
                   <ul>
-                    {menuData[category].map((menuItem) => (
-                      <li className="menu-item" key={menuItem}>
-                        <span className="menu-text">{menuItem}</span>
+                    {menuData[category].map((menuItem) => {
+                      const key = `${category}|${menuItem}`;
 
-                        <div className="rating-container">
-                          <div className="star_rating">
-                            {[...Array(5)].map((_, starIndex) => (
-                              <span
-                                key={starIndex}
-                                className={`star ${ratings[menuItem] > starIndex ? 'filled' : 'empty'}`}
-                                onClick={() => handleStarClick(menuItem, starIndex)}
-                              >
-                                {ratings[menuItem] > starIndex ? '★' : '☆'}
-                              </span>
-                            ))}
-                          </div>
+                      return (
+                        <li className="menu-item" key={key}>
+                          <span className="menu-text">{menuItem}</span>
 
-                          {avgStats[menuItem] && (
-                            <div className="menu-stats">
-                              <span className="avg">Avg: {avgStats[menuItem].avg.toFixed(1)}</span>
-                              <span className="count">Count: {avgStats[menuItem].count}</span>
+                          <div className="rating-container">
+                            <div className="star_rating">
+                              {[...Array(5)].map((_, starIndex) => (
+                                <span
+                                  key={starIndex}
+                                  className={`star ${ratings[key] > starIndex ? 'filled' : 'empty'}`}
+                                  onClick={() => handleStarClick(menuItem, category, starIndex)}
+                                >
+                                  {ratings[key] > starIndex ? '★' : '☆'}
+                                </span>
+                              ))}
                             </div>
-                          )}
-                        </div>
-                      </li>
-                    ))}
+
+                            {avgStats[key] && (
+                              <div className="menu-stats">
+                                <span className="avg">Avg: {avgStats[key].avg.toFixed(1)}</span>
+                                <span className="count">Count: {avgStats[key].count}</span>
+                              </div>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
                 <button id="submit_button" onClick={() => handleSubmit(category)}>Submit</button>
