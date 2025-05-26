@@ -30,37 +30,39 @@ function DropdownList({ visibility, setVisibility, name }) {
 
   const askForNotificationPermission = async () => {
     if (!('Notification' in window)) {
-      alert('This browser does not support notifications.');
+      console.warn('Notifications not supported in this browser.');
       return;
     }
 
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
-      console.log('🔔 Notification permission granted');
-      // (Optional) Show a welcome notification
-      new Notification('Thanks!', {
-        body: 'Notifications are now enabled.',
+      console.log('✅ Notifications enabled');
+      new Notification('✅ Notifications enabled!', {
+        body: 'You’ll now get menu updates.',
       });
-    } else if (permission === 'denied') {
-      console.log('🚫 Notification permission denied');
     } else {
-      console.log('🔄 Notification dismissed');
+      console.log('❌ Notifications denied or dismissed');
     }
   };
 
+  const isStandaloneMode = () => {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+          window.navigator.standalone === true; // For iOS Safari
+  };
+
   useEffect(() => {
-    const handleAppInstalled = () => {
-      console.log('✅ App installed as PWA!');
-      setTimeout(() => {
-        askForNotificationPermission();
-      }, 1000); // Ask 1 second after install
-    };
-
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    return () => {
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
+    if (isStandaloneMode()) {
+      console.log('📱 App is running in standalone mode (installed PWA)');
+      
+      // Ask only if permission has not already been granted or denied
+      if (Notification.permission === 'default') {
+        setTimeout(() => {
+          askForNotificationPermission();
+        }, 1000); // Delay to avoid immediately prompting on open
+      }
+    } else {
+      console.log('🌐 App is running in browser tab. Do not ask for notifications.');
+    }
   }, []);
 
   // Handle star click with compound key "category|item"
