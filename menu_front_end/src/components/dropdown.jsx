@@ -27,13 +27,28 @@ function DropdownList({ visibility, setVisibility, name }) {
   const [submitDisabled, setSubmitDisabled] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Notification state
+  const [showNotification, setShowNotification] = useState(null);
+
   const toggleItem = (index) => {
     const updated = [...visibility];
     updated[index] = updated[index] === 1 ? 0 : 1;
     setVisibility(updated);
   };
 
+  // Meal times (24h format)
+  const mealTimes = {
+    Breakfast: { start: 8, end: 12 },
+    Lunch: { start: 12, end: 15 },
+    Snacks: { start: 15, end: 18 },
+    Dinner: { start: 18, end: 24 },
+  };
 
+  const hasMealTimePassed = (meal) => {
+    const now = new Date();
+    const hour = now.getHours();
+    return hour >= mealTimes[meal].end;
+  };
 
   // Handle star click with compound key "category|item"
   const handleStarClick = useCallback((item, category, starIndex) => {
@@ -48,7 +63,7 @@ function DropdownList({ visibility, setVisibility, name }) {
   const fetchMenuAndInitialize = useCallback(async () => {
     try {
       const data = await GetMenuData(firebaseConfig.projectId);
-      console.log(data)
+      console.log(data);
       setMenuData(data);
 
       const initialRatings = {};
@@ -76,7 +91,7 @@ function DropdownList({ visibility, setVisibility, name }) {
           ),
         }));
       } else {
-        // Explicitly reset all ratings to zero if no previous ratings found
+        // Reset all ratings to zero if no previous ratings found
         setRatings((prev) => {
           const resetRatings = {};
           Object.keys(prev).forEach(key => {
@@ -144,7 +159,7 @@ function DropdownList({ visibility, setVisibility, name }) {
   // Initial load: menu + user rating + stats
   useEffect(() => {
     const initialize = async () => {
-      console.log("hey")
+      console.log("hey");
       await fetchMenuAndInitialize();
     };
     initialize();
@@ -158,10 +173,58 @@ function DropdownList({ visibility, setVisibility, name }) {
     }
   }, [menuData, fetchPreviousRatings, fetchAvgRatings]);
 
+  // Check for missed ratings after data is loaded
+  useEffect(() => {
+    if (!menuData || !ratings) return;
+
+    for (const category of categories) {
+      if (hasMealTimePassed(category)) {
+        const items = menuData[category] || [];
+        const anyRated = items.some(item => {
+          const key = `${category}|${item}`;
+          return ratings[key] > 0;
+        });
+
+        if (!anyRated) {
+          if (showNotification !== category) {
+            setShowNotification(category);
+          }
+          break; // notify only for first missed meal found
+        }
+      }
+    }
+  }, [menuData, ratings, showNotification]);
+
   if (loading) return <Loading />;
 
   return (
     <>
+      {showNotification && (
+        <div className="notification-popup" style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          backgroundColor: '#f8d7da',
+          color: '#721c24',
+          padding: '15px',
+          borderRadius: '8px',
+          boxShadow: '0 0 10px rgba(0,0,0,0.2)',
+          zIndex: 9999,
+          maxWidth: '300px',
+        }}>
+          <p>Please rate your <strong>{showNotification}</strong> menu items! Your feedback matters.</p>
+          <button onClick={() => setShowNotification(null)} style={{
+            background: 'transparent',
+            border: 'none',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            color: '#721c24',
+            fontSize: '16px',
+            marginTop: '5px',
+          }}>Dismiss</button>
+        </div>
+      )}
+
       <HeaderCommon />
       <div className="dropdown">
         <ul className="dropdown_list">
