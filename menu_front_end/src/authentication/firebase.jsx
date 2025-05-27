@@ -1,5 +1,16 @@
+// firebase.jsx (or firebase.js)
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut
+} from 'firebase/auth';
+import {
+  getMessaging,
+  getToken,
+  onMessage
+} from 'firebase/messaging'; // ✅ Correct source for messaging
 
 const firebaseConfig = {
   apiKey: "AIzaSyAmacVQMKdZZRxgC9rKHX-LHN96L7BiSbA",
@@ -16,10 +27,21 @@ const app = initializeApp(firebaseConfig);
 
 // Set up Firebase Authentication
 const auth = getAuth(app);
-
 const provider = new GoogleAuthProvider();
+
 provider.setCustomParameters({
   prompt: 'select_account'
 });
 
-export { auth, provider, signInWithPopup, signOut };
+// Set up Messaging
+const messaging = getMessaging(app);
+
+export {
+  auth,
+  provider,
+  signInWithPopup,
+  signOut,
+  messaging,
+  getToken,
+  onMessage
+};

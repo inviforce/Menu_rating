@@ -2,7 +2,7 @@ import './App.css';
 import DropdownList from './components/dropdown';
 import { useEffect, useState } from 'react';
 import Login from './authentication/login';
-import { auth } from './authentication/firebase';
+import { auth,messaging,getToken,onMessage } from './authentication/firebase';
 import InstallPWAPopup from './components/pwa_installer';
 
 // 🧠 Utility: Set default open meal based on time
@@ -50,44 +50,54 @@ function App() {
       console.error("Error signing out:", error);
     }
   };
+
 useEffect(() => {
-  let intervalId;
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker
+      .register('/firebase-messaging-sw.js')
+      .then(() => console.log('✅ Service Worker Registered'))
+      .catch(err => console.error('❌ SW registration error', err));
+  }
 
-  const showNotification = async () => {
-      if (Notification.permission !== 'granted') {
-        console.log('❌ Notification permission not granted');
-        return;
-      }
-
-      const registration = await navigator.serviceWorker.getRegistration();
-      if (registration) {
-        const now = new Date().toLocaleTimeString();
-        registration.showNotification('📱 Current Time', {
-          body: `It's now ${now}`,
-          icon: '/icon-192x192.png',
-          tag: 'time-update',
-          renotify: true
-        });
-      } else {
-        console.log('❌ No service worker registration found');
-      }
-    };
-
-    const startInterval = async () => {
+  const initMessaging = async () => {
+    try {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
-        intervalId = setInterval(showNotification, 10000); // every 10 seconds
+        const token = await getToken(messaging, {
+          vapidKey: 'BIcwXrGSZZz57IoAEEDVB2oCPpyaDV7hz2bIfMn0gpcDuVVGO4s2IIlncVZ6yqtShc9bxgV5Ma5AEpuKoRwff4I',
+        });
+        console.log('✅ FCM Token:', token);
+
+        // Send token to backend API
+        await fetch('/api/notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+
       } else {
-        console.log('❌ Notification permission denied');
+        console.warn('❌ Notification permission not granted');
       }
-    };
+    } catch (err) {
+      console.error('❌ Error getting FCM token', err);
+    }
+  };
 
-    startInterval();
+  initMessaging();
 
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, []);
+  onMessage(messaging, payload => {
+    console.log('📩 Foreground message:', payload);
+    const { title, body } = payload.notification;
+    navigator.serviceWorker.getRegistration().then(reg => {
+      reg?.showNotification(title, {
+        body,
+        icon: '/icon-192x192.png',
+      });
+    });
+  });
+}, []);
+
+
   return (
     <div className="root">
       {user ? (
