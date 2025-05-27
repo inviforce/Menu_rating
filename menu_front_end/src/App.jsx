@@ -35,7 +35,7 @@ function App() {
   const [show, setShow] = useState(getInitialVisibility);
   const [user, setUser] = useState(null);
 
-  // 🔒 Firebase Auth listener
+  // Firebase Auth listener
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((loggedInUser) => {
       setUser(loggedInUser);
@@ -50,8 +50,7 @@ function App() {
       console.error("Error signing out:", error);
     }
   };
-
-  useEffect(() => {
+useEffect(() => {
   let intervalId;
 
   const showNotification = async () => {
@@ -89,8 +88,6 @@ function App() {
       clearInterval(intervalId);
     };
   }, []);
-
-
   return (
     <div className="root">
       {user ? (

@@ -3,7 +3,9 @@ async function GetMenuData(projectId) {
 
   const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/menu_data`;
 
+
   const response = await fetch(url);
+  console.log(response)
   if (!response.ok) {
     throw new Error(`Firestore API request failed: ${response.statusText}`);
   }
@@ -11,7 +13,6 @@ async function GetMenuData(projectId) {
   const data = await response.json();
   const documents = data.documents || [];
   const now = new Date();
-
   const serverYear = now.getFullYear();
   const serverMonth = now.getMonth();
   const serverDate = now.getDate();
@@ -30,7 +31,6 @@ async function GetMenuData(projectId) {
     const fbYear = firebaseDate.getFullYear();
     const fbMonth = firebaseDate.getMonth();
     const fbDate = firebaseDate.getDate();
-
     if (fbYear === serverYear && fbMonth === serverMonth && fbDate === serverDate) {
       for (const [key, value] of Object.entries(innerFields)) {
         if (key === 'Day') continue;

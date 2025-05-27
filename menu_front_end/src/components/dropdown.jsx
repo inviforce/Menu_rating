@@ -8,8 +8,13 @@ import checkRatingsByName from '../firebase/checkRating';
 import submitMenuRating from '../firebase/submitMenuRating';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBPendkWM0LrYFYnruyqdOwe5-60MdRE7Q",
-  projectId: "menu-4a32c"
+  apiKey: "AIzaSyAmacVQMKdZZRxgC9rKHX-LHN96L7BiSbA",
+  authDomain: "some-23fc5.firebaseapp.com",
+  projectId: "some-23fc5",
+  storageBucket: "some-23fc5.firebasestorage.app",
+  messagingSenderId: "683772900348",
+  appId: "1:683772900348:web:8ac72d98c27e0bf3f6f879",
+  measurementId: "G-7HQ641M1DQ"
 };
 
 const categories = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'];
@@ -43,6 +48,7 @@ function DropdownList({ visibility, setVisibility, name }) {
   const fetchMenuAndInitialize = useCallback(async () => {
     try {
       const data = await GetMenuData(firebaseConfig.projectId);
+      console.log(data)
       setMenuData(data);
 
       const initialRatings = {};
@@ -138,6 +144,7 @@ function DropdownList({ visibility, setVisibility, name }) {
   // Initial load: menu + user rating + stats
   useEffect(() => {
     const initialize = async () => {
+      console.log("hey")
       await fetchMenuAndInitialize();
     };
     initialize();

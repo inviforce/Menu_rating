@@ -2,21 +2,22 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBPendkWM0LrYFYnruyqdOwe5-60MdRE7Q",
-  authDomain: "menu-4a32c.firebaseapp.com",
-  projectId: "menu-4a32c",
-  storageBucket: "menu-4a32c.firebasestorage.app",
-  messagingSenderId: "491840054429",
-  appId: "1:491840054429:web:42bfa07787881520a42074"
+  apiKey: "AIzaSyAmacVQMKdZZRxgC9rKHX-LHN96L7BiSbA",
+  authDomain: "some-23fc5.firebaseapp.com",
+  projectId: "some-23fc5",
+  storageBucket: "some-23fc5.firebasestorage.app",
+  messagingSenderId: "683772900348",
+  appId: "1:683772900348:web:8ac72d98c27e0bf3f6f879",
+  measurementId: "G-7HQ641M1DQ"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
+// Set up Firebase Authentication
 const auth = getAuth(app);
 
 const provider = new GoogleAuthProvider();
-
-// This ensures the user is always prompted to select an account
 provider.setCustomParameters({
   prompt: 'select_account'
 });
