@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Login from './authentication/login';
 import { auth, messaging, getToken, onMessage } from './authentication/firebase';
 import InstallPWAPopup from './components/pwa_installer';
+import RegisterFCMToken from './firebase/fcm_adder';
 
 // 🧠 Utility: Set default open meal based on time
 const getInitialVisibility = () => {
@@ -21,9 +22,8 @@ const getInitialVisibility = () => {
 function App() {
   const [show, setShow] = useState(getInitialVisibility);
   const [user, setUser] = useState(null);
-  const [logs, setLogs] = useState([]); // For storing logs
+  const [logs, setLogs] = useState([]);
 
-  // Helper to add log message to state and console
   const addLog = (message) => {
     console.log(message);
     setLogs((prev) => [...prev, message]);
@@ -66,8 +66,28 @@ function App() {
         const token = await getToken(messaging, {
           vapidKey: 'BIcwXrGSZZz57IoAEEDVB2oCPpyaDV7hz2bIfMn0gpcDuVVGO4s2IIlncVZ6yqtShc9bxgV5Ma5AEpuKoRwff4I',
         });
+        const name = user.displayName || 'User';
+
         addLog('✅ FCM Token: ' + token);
-        addLog('👤 User name: ' + (user.displayName || 'User'));
+        addLog('👤 User name: ' + name);
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyAmacVQMKdZZRxgC9rKHX-LHN96L7BiSbA",
+          authDomain: "some-23fc5.firebaseapp.com",
+          projectId: "some-23fc5",
+          storageBucket: "some-23fc5.firebasestorage.app",
+          messagingSenderId: "683772900348",
+          appId: "1:683772900348:web:8ac72d98c27e0bf3f6f879",
+          measurementId: "G-7HQ641M1DQ"
+        };
+
+        try {
+          const response = await RegisterFCMToken({ name, token }, firebaseConfig);
+          addLog('📬 FCM Registration Result: ' + response.message);
+        } catch (err) {
+          addLog('❌ Error registering FCM token: ' + err.message);
+        }
+
       } catch (err) {
         addLog('❌ Error getting FCM token: ' + err.message);
       }
