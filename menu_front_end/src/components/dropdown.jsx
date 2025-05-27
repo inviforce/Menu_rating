@@ -26,11 +26,6 @@ const categoryTimeMap = {
   Dinner: 21,
 };
 
-function hasMealTimePassed(category) {
-  const currentHour = new Date().getHours();
-  return currentHour >= categoryTimeMap[category];
-}
-
 function DropdownList({ visibility, setVisibility, name }) {
   const [menuData, setMenuData] = useState(null);
   const [ratings, setRatings] = useState({});
@@ -160,24 +155,31 @@ function DropdownList({ visibility, setVisibility, name }) {
   useEffect(() => {
     if (!menuData || !ratings) return;
 
-    for (const category of categories) {
-      if (
-        hasMealTimePassed(category) &&
-        !dismissedNotifications.has(category)
-      ) {
-        const items = menuData[category] || [];
-        const anyRated = items.some(item => {
-          const key = `${category}|${item}`;
-          return ratings[key] > 0;
-        });
+    const currentHour = new Date().getHours();
 
-        if (!anyRated) {
-          if (showNotification !== category) {
-            setShowNotification(category);
-          }
-          break;
+    for (const category of categories) {
+      const mealHour = categoryTimeMap[category];
+
+      if (currentHour < mealHour) continue; // Not time yet
+      if (dismissedNotifications.has(category)) continue;
+
+      const items = menuData[category] || [];
+      const allUnrated = items.every(item => {
+        const key = `${category}|${item}`;
+        return ratings[key] === 0;
+      });
+
+      if (allUnrated) {
+        if (showNotification !== category) {
+          setShowNotification(category);
         }
+        return;
       }
+    }
+
+    // Clear notification if none applicable
+    if (showNotification) {
+      setShowNotification(null);
     }
   }, [menuData, ratings, dismissedNotifications, showNotification]);
 
