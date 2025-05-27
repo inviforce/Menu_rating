@@ -1,0 +1,18 @@
+.logContainer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 150px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.8);
+  color: #0f0;
+  font-family: monospace;
+  font-size: 12px;
+  padding: 8px;
+  z-index: 1000;
+}
+
+.logLine {
+  white-space: pre-wrap;
+}

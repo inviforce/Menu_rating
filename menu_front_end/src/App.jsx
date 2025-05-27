@@ -24,7 +24,11 @@ function App() {
   const [user, setUser] = useState(null);
   const [logs, setLogs] = useState([]);
 
-  
+  // Custom logger to show logs on screen
+  const addLog = (message) => {
+    setLogs((prevLogs) => [...prevLogs.slice(-49), message]); // Keep last 50 logs
+    console.log(message); // Also output to browser console
+  };
 
   // Firebase Auth listener
   useEffect(() => {
@@ -125,6 +129,13 @@ function App() {
         )}
 
         <InstallPWAPopup />
+      </div>
+
+      {/* On-screen log output */}
+      <div className="logContainer">
+        {logs.map((log, index) => (
+          <div key={index} className="logLine">{log}</div>
+        ))}
       </div>
     </>
   );
