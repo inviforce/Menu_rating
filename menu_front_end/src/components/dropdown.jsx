@@ -35,6 +35,7 @@ function DropdownList({ visibility, setVisibility, name }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showNotification, setShowNotification] = useState(null);
   const [dismissedNotifications, setDismissedNotifications] = useState(new Set());
+  const [notificationCheckReady, setNotificationCheckReady] = useState(false);
 
   const toggleItem = (index) => {
     const updated = [...visibility];
@@ -152,15 +153,25 @@ function DropdownList({ visibility, setVisibility, name }) {
     }
   }, [menuData, fetchPreviousRatings, fetchAvgRatings]);
 
+  // Wait 5 seconds after ratings are loaded before checking for notifications
   useEffect(() => {
-    if (!menuData || !ratings) return;
+    if (!loading && Object.keys(ratings).length > 0) {
+      const timer = setTimeout(() => {
+        setNotificationCheckReady(true);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, ratings]);
+
+  useEffect(() => {
+    if (!menuData || !ratings || !notificationCheckReady) return;
 
     const currentHour = new Date().getHours();
 
     for (const category of categories) {
       const mealHour = categoryTimeMap[category];
 
-      if (currentHour < mealHour) continue; // Not time yet
+      if (currentHour < mealHour) continue;
       if (dismissedNotifications.has(category)) continue;
 
       const items = menuData[category] || [];
@@ -177,11 +188,10 @@ function DropdownList({ visibility, setVisibility, name }) {
       }
     }
 
-    // Clear notification if none applicable
     if (showNotification) {
       setShowNotification(null);
     }
-  }, [menuData, ratings, dismissedNotifications, showNotification]);
+  }, [menuData, ratings, dismissedNotifications, showNotification, notificationCheckReady]);
 
   const dismissNotification = () => {
     setDismissedNotifications((prev) => new Set(prev).add(showNotification));
@@ -235,11 +245,9 @@ function DropdownList({ visibility, setVisibility, name }) {
                   <ul>
                     {menuData[category].map((menuItem) => {
                       const key = `${category}|${menuItem}`;
-
                       return (
                         <li className="menu-item" key={key}>
                           <span className="menu-text">{menuItem}</span>
-
                           <div className="rating-container">
                             <div className="star_rating">
                               {[...Array(5)].map((_, starIndex) => (
@@ -252,7 +260,6 @@ function DropdownList({ visibility, setVisibility, name }) {
                                 </span>
                               ))}
                             </div>
-
                             {avgStats[key] && (
                               <div className="menu-stats">
                                 <span className="avg">Avg: {avgStats[key].avg.toFixed(1)}</span>
