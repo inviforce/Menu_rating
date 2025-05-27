@@ -1,6 +1,7 @@
 async function deleteDocument(docName, firebaseConfig) {
   const url = `https://firestore.googleapis.com/v1/${docName}?key=${firebaseConfig.apiKey}`;
   const res = await fetch(url, { method: 'DELETE' });
+
   if (!res.ok) {
     throw new Error(`Failed to delete document ${docName}: ${res.statusText}`);
   }
@@ -10,13 +11,14 @@ export default async function RegisterFCMToken(receivedData, firebaseConfig) {
   if (!firebaseConfig?.projectId || !firebaseConfig?.apiKey) {
     throw new Error('Firebase config with projectId and apiKey is required');
   }
+
   if (!receivedData?.name || !receivedData?.token) {
     throw new Error('Received data must include name and token');
   }
 
   const { name, token } = receivedData;
 
-  // Query for all docs with this username
+  // Step 1: Query all existing documents for this user name
   const queryPayload = {
     structuredQuery: {
       from: [{ collectionId: 'menu_notification' }],
@@ -43,19 +45,7 @@ export default async function RegisterFCMToken(receivedData, firebaseConfig) {
 
   const queryResult = await queryRes.json();
 
-  // Check if the token is already stored for this user
-  const tokenAlreadyExists = queryResult.some(entry => {
-    const doc = entry.document;
-    if (!doc) return false;
-    const storedToken = doc.fields?.token?.stringValue;
-    return storedToken === token;
-  });
-
-  if (tokenAlreadyExists) {
-    return { message: 'Token already exists for this user, no changes made' };
-  }
-
-  // Delete all existing docs for this user (old tokens)
+  // Step 2: Delete all documents with the same user name
   for (const entry of queryResult) {
     const docName = entry.document?.name;
     if (docName) {
@@ -63,7 +53,7 @@ export default async function RegisterFCMToken(receivedData, firebaseConfig) {
     }
   }
 
-  // Add new token document
+  // Step 3: Add new token document
   const firestoreFormattedData = {
     fields: {
       name: { stringValue: name },
@@ -87,7 +77,7 @@ export default async function RegisterFCMToken(receivedData, firebaseConfig) {
   const postResponseData = await postRes.json();
 
   return {
-    message: 'New token registered after deleting previous token(s)',
+    message: 'Previous token(s) deleted and new token registered',
     response: postResponseData,
   };
 }
