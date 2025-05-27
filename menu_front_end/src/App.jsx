@@ -18,22 +18,16 @@ const getInitialVisibility = () => {
   return new_show;
 };
 
-// ✅ This will print logs directly on screen (for mobile debugging)
-// console.log = function (msg) {
-//   const existing = document.getElementById('log');
-//   if (existing) existing.innerText += '\n' + msg;
-//   else {
-//     const div = document.createElement('div');
-//     div.id = 'log';
-//     div.style = 'white-space: pre; background: #000; color: #0f0; padding: 10px;';
-//     div.innerText = msg;
-//     document.body.appendChild(div);
-//   }
-// };
-
 function App() {
   const [show, setShow] = useState(getInitialVisibility);
   const [user, setUser] = useState(null);
+  const [logs, setLogs] = useState([]); // For storing logs
+
+  // Helper to add log message to state and console
+  const addLog = (message) => {
+    console.log(message);
+    setLogs((prev) => [...prev, message]);
+  };
 
   // Firebase Auth listener
   useEffect(() => {
@@ -47,40 +41,42 @@ function App() {
     try {
       await auth.signOut();
     } catch (error) {
-      console.error("Error signing out:", error);
+      addLog("Error signing out: " + error.message);
     }
   };
 
   useEffect(() => {
+    if (!user) return;
+
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/firebase-messaging-sw.js')
-        .then(() => console.log('✅ Service Worker Registered'))
-        .catch(err => console.error('❌ SW registration error', err));
+        .then(() => addLog('✅ Service Worker Registered'))
+        .catch(err => addLog('❌ SW registration error: ' + err.message));
     }
 
-    // If permission already granted, initialize messaging
-    if (Notification.permission === 'granted') {
-      (async () => {
-        try {
-          const token = await getToken(messaging, {
-            vapidKey: 'BIcwXrGSZZz57IoAEEDVB2oCPpyaDV7hz2bIfMn0gpcDuVVGO4s2IIlncVZ6yqtShc9bxgV5Ma5AEpuKoRwff4I',
-          });
-          console.log('✅ FCM Token:', token);
-
-          await fetch('/api/notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token }),
-          });
-        } catch (err) {
-          console.error('❌ Error getting FCM token', err);
+    const setupFCM = async () => {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          addLog('🔕 Notification permission not granted');
+          return;
         }
-      })();
-    }
+
+        const token = await getToken(messaging, {
+          vapidKey: 'BIcwXrGSZZz57IoAEEDVB2oCPpyaDV7hz2bIfMn0gpcDuVVGO4s2IIlncVZ6yqtShc9bxgV5Ma5AEpuKoRwff4I',
+        });
+        addLog('✅ FCM Token: ' + token);
+        addLog('👤 User name: ' + (user.displayName || 'User'));
+      } catch (err) {
+        addLog('❌ Error getting FCM token: ' + err.message);
+      }
+    };
+
+    setupFCM();
 
     onMessage(messaging, payload => {
-      console.log('📩 Foreground message:', payload);
+      addLog('📩 Foreground message: ' + JSON.stringify(payload));
       const { title, body } = payload.notification;
       navigator.serviceWorker.getRegistration().then(reg => {
         reg?.showNotification(title, {
@@ -89,29 +85,52 @@ function App() {
         });
       });
     });
-  }, []);
+  }, [user]);
 
   return (
-    <div className="root">
-      {user ? (
-        <>
-          <h2 className="headingStyle">Welcome, {user?.displayName || "User"}</h2>
-          <DropdownList
-            visibility={show}
-            setVisibility={setShow}
-            name={user?.displayName || "User"}
-          />
-          <button className="signout" onClick={handleSignOut}>Sign out</button>
-        </>
-      ) : (
-        <div>
-          <h1>Menu Rating</h1>
-          <Login />
-        </div>
-      )}
+    <>
+      <div className="root">
+        {user ? (
+          <>
+            <h2 className="headingStyle">Welcome, {user?.displayName || "User"}</h2>
+            <DropdownList
+              visibility={show}
+              setVisibility={setShow}
+              name={user?.displayName || "User"}
+            />
+            <button className="signout" onClick={handleSignOut}>Sign out</button>
+          </>
+        ) : (
+          <div>
+            <h1>Menu Rating</h1>
+            <Login />
+          </div>
+        )}
 
-      <InstallPWAPopup />
-    </div>
+        <InstallPWAPopup />
+      </div>
+
+      {/* Log viewer fixed at bottom */}
+      <div style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        width: '100%',
+        maxHeight: '150px',
+        overflowY: 'auto',
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        color: 'white',
+        fontSize: '12px',
+        padding: '10px',
+        zIndex: 9999,
+        fontFamily: 'monospace',
+      }}>
+        <strong>Logs:</strong>
+        {logs.map((log, index) => (
+          <div key={index}>{log}</div>
+        ))}
+      </div>
+    </>
   );
 }
 
