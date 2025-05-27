@@ -24,10 +24,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [logs, setLogs] = useState([]);
 
-  const addLog = (message) => {
-    console.log(message);
-    setLogs((prev) => [...prev, message]);
-  };
+  
 
   // Firebase Auth listener
   useEffect(() => {
@@ -128,27 +125,6 @@ function App() {
         )}
 
         <InstallPWAPopup />
-      </div>
-
-      {/* Log viewer fixed at bottom */}
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        width: '100%',
-        maxHeight: '150px',
-        overflowY: 'auto',
-        backgroundColor: 'rgba(0,0,0,0.8)',
-        color: 'white',
-        fontSize: '12px',
-        padding: '10px',
-        zIndex: 9999,
-        fontFamily: 'monospace',
-      }}>
-        <strong>Logs:</strong>
-        {logs.map((log, index) => (
-          <div key={index}>{log}</div>
-        ))}
       </div>
     </>
   );

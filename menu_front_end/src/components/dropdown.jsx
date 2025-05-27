@@ -163,40 +163,8 @@ function DropdownList({ visibility, setVisibility, name }) {
     }
   }, [loading, ratings]);
 
-  useEffect(() => {
-    if (!menuData || !ratings || !notificationCheckReady) return;
-
-    const currentHour = new Date().getHours();
-
-    for (const category of categories) {
-      const mealHour = categoryTimeMap[category];
-
-      if (currentHour < mealHour) continue;
-      if (dismissedNotifications.has(category)) continue;
-
-      const items = menuData[category] || [];
-      const allUnrated = items.every(item => {
-        const key = `${category}|${item}`;
-        return ratings[key] === 0;
-      });
-
-      if (allUnrated) {
-        if (showNotification !== category) {
-          setShowNotification(category);
-        }
-        return;
-      }
-    }
-
-    if (showNotification) {
-      setShowNotification(null);
-    }
-  }, [menuData, ratings, dismissedNotifications, showNotification, notificationCheckReady]);
-
-  const dismissNotification = () => {
-    setDismissedNotifications((prev) => new Set(prev).add(showNotification));
-    setShowNotification(null);
-  };
+  
+  
 
   if (loading) return <Loading />;
 
@@ -204,36 +172,6 @@ function DropdownList({ visibility, setVisibility, name }) {
     <>
       <HeaderCommon />
 
-      {showNotification && (
-        <div className="notification-popup" style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          backgroundColor: '#fef3c7',
-          border: '1px solid #facc15',
-          padding: '10px 15px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          zIndex: 999,
-        }}>
-          <span>
-            You haven’t rated any items for <strong>{showNotification}</strong>. Please rate them!
-          </span>
-          <button
-            onClick={dismissNotification}
-            style={{
-              marginLeft: '10px',
-              background: 'none',
-              border: 'none',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              color: '#b91c1c',
-            }}
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
 
       <div className="dropdown">
         <ul className="dropdown_list">
