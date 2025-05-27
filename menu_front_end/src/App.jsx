@@ -19,17 +19,17 @@ const getInitialVisibility = () => {
 };
 
 // ✅ This will print logs directly on screen (for mobile debugging)
-console.log = function (msg) {
-  const existing = document.getElementById('log');
-  if (existing) existing.innerText += '\n' + msg;
-  else {
-    const div = document.createElement('div');
-    div.id = 'log';
-    div.style = 'white-space: pre; background: #000; color: #0f0; padding: 10px;';
-    div.innerText = msg;
-    document.body.appendChild(div);
-  }
-};
+// console.log = function (msg) {
+//   const existing = document.getElementById('log');
+//   if (existing) existing.innerText += '\n' + msg;
+//   else {
+//     const div = document.createElement('div');
+//     div.id = 'log';
+//     div.style = 'white-space: pre; background: #000; color: #0f0; padding: 10px;';
+//     div.innerText = msg;
+//     document.body.appendChild(div);
+//   }
+// };
 
 function App() {
   const [show, setShow] = useState(getInitialVisibility);
