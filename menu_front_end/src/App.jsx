@@ -22,13 +22,6 @@ const getInitialVisibility = () => {
 function App() {
   const [show, setShow] = useState(getInitialVisibility);
   const [user, setUser] = useState(null);
-  const [logs, setLogs] = useState([]);
-
-  // Custom logger to show logs on screen
-  const addLog = (message) => {
-    setLogs((prevLogs) => [...prevLogs.slice(-49), message]); // Keep last 50 logs
-    console.log(message); // Also output to browser console
-  };
 
   // Firebase Auth listener
   useEffect(() => {
@@ -42,7 +35,7 @@ function App() {
     try {
       await auth.signOut();
     } catch (error) {
-      addLog("Error signing out: " + error.message);
+      console.log("Error signing out: " + error.message);
     }
   };
 
@@ -52,15 +45,15 @@ function App() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/firebase-messaging-sw.js')
-        .then(() => addLog('✅ Service Worker Registered'))
-        .catch(err => addLog('❌ SW registration error: ' + err.message));
+        .then(() => console.log('✅ Service Worker Registered'))
+        .catch(err => console.log('❌ SW registration error: ' + err.message));
     }
 
     const setupFCM = async () => {
       try {
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
-          addLog('🔕 Notification permission not granted');
+          console.log('🔕 Notification permission not granted');
           return;
         }
 
@@ -69,8 +62,8 @@ function App() {
         });
         const name = user.displayName || 'User';
 
-        addLog('✅ FCM Token: ' + token);
-        addLog('👤 User name: ' + name);
+        console.log('✅ FCM Token: ' + token);
+        console.log('👤 User name: ' + name);
 
         const firebaseConfig = {
           apiKey: "AIzaSyAmacVQMKdZZRxgC9rKHX-LHN96L7BiSbA",
@@ -84,20 +77,20 @@ function App() {
 
         try {
           const response = await RegisterFCMToken({ name, token }, firebaseConfig);
-          addLog('📬 FCM Registration Result: ' + response.message);
+          console.log('📬 FCM Registration Result: ' + response.message);
         } catch (err) {
-          addLog('❌ Error registering FCM token: ' + err.message);
+          console.log('❌ Error registering FCM token: ' + err.message);
         }
 
       } catch (err) {
-        addLog('❌ Error getting FCM token: ' + err.message);
+        console.log('❌ Error getting FCM token: ' + err.message);
       }
     };
 
     setupFCM();
 
     onMessage(messaging, payload => {
-      addLog('📩 Foreground message: ' + JSON.stringify(payload));
+      console.log('📩 Foreground message: ' + JSON.stringify(payload));
       const { title, body } = payload.notification;
       navigator.serviceWorker.getRegistration().then(reg => {
         reg?.showNotification(title, {
@@ -129,13 +122,6 @@ function App() {
         )}
 
         <InstallPWAPopup />
-      </div>
-
-      {/* On-screen log output */}
-      <div className="logContainer">
-        {logs.map((log, index) => (
-          <div key={index} className="logLine">{log}</div>
-        ))}
       </div>
     </>
   );
