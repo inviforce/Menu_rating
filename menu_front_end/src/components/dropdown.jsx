@@ -19,13 +19,6 @@ const firebaseConfig = {
 
 const categories = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'];
 
-const categoryTimeMap = {
-  Breakfast: 9,
-  Lunch: 14,
-  Snacks: 17,
-  Dinner: 21,
-};
-
 function DropdownList({ visibility, setVisibility, name }) {
   const [menuData, setMenuData] = useState(null);
   const [ratings, setRatings] = useState({});
@@ -33,9 +26,6 @@ function DropdownList({ visibility, setVisibility, name }) {
   const [loading, setLoading] = useState(true);
   const [submitDisabled, setSubmitDisabled] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showNotification, setShowNotification] = useState(null);
-  const [dismissedNotifications, setDismissedNotifications] = useState(new Set());
-  const [notificationCheckReady, setNotificationCheckReady] = useState(false);
 
   const toggleItem = (index) => {
     const updated = [...visibility];
@@ -97,9 +87,15 @@ function DropdownList({ visibility, setVisibility, name }) {
     try {
       const { data } = await getAvgRatingsByType(category, firebaseConfig);
       if (data) {
+        const formatted = {};
+        Object.entries(data).forEach(([item, stats]) => {
+          const key = `${category}|${item}`;
+          formatted[key] = stats;
+        });
+
         setAvgStats((prev) => ({
           ...prev,
-          ...data,
+          ...formatted,
         }));
       }
     } catch (err) {
@@ -153,26 +149,11 @@ function DropdownList({ visibility, setVisibility, name }) {
     }
   }, [menuData, fetchPreviousRatings, fetchAvgRatings]);
 
-  // Wait 5 seconds after ratings are loaded before checking for notifications
-  useEffect(() => {
-    if (!loading && Object.keys(ratings).length > 0) {
-      const timer = setTimeout(() => {
-        setNotificationCheckReady(true);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [loading, ratings]);
-
-  
-  
-
   if (loading) return <Loading />;
 
   return (
     <>
       <HeaderCommon />
-
-
       <div className="dropdown">
         <ul className="dropdown_list">
           {categories.map((category, index) => (
