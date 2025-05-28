@@ -76,7 +76,7 @@ html, body {
 
 .header_common h1 {
   font-family: 'Playfair Display', serif;
-  font-size: clamp(1.5rem, 4vw, 2.6rem); /* Responsive font size */
+  font-size: clamp(2rem, 5vw, 3.2rem);/* Responsive font size */
   font-weight: 600;
   color: #0f172a;
   margin: 0;
