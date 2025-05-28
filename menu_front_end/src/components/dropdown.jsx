@@ -156,20 +156,16 @@ function DropdownList({ visibility, setVisibility, name }) {
     }
   }, [loading, ratings]);
 
-  // ✅ New: Periodically refresh average ratings every 15 seconds
+  // ✅ New: Periodically refresh average ratings every 10 seconds for all categories
   useEffect(() => {
     if (!menuData) return;
 
     const interval = setInterval(() => {
-      categories.forEach((category, index) => {
-        if (visibility[index] === 1) {
-          fetchAvgRatings(category);
-        }
-      });
-    }, 15000); // 15 seconds
+      categories.forEach(fetchAvgRatings);
+    }, 10000); // 10 seconds
 
     return () => clearInterval(interval);
-  }, [menuData, visibility, fetchAvgRatings]);
+  }, [menuData, fetchAvgRatings]);
 
   if (loading) return <Loading />;
 
