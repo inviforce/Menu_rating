@@ -19,13 +19,6 @@ const firebaseConfig = {
 
 const categories = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'];
 
-const categoryTimeMap = {
-  Breakfast: 9,
-  Lunch: 14,
-  Snacks: 17,
-  Dinner: 21,
-};
-
 function DropdownList({ visibility, setVisibility, name }) {
   const [menuData, setMenuData] = useState(null);
   const [ratings, setRatings] = useState({});
@@ -153,7 +146,7 @@ function DropdownList({ visibility, setVisibility, name }) {
     }
   }, [menuData, fetchPreviousRatings, fetchAvgRatings]);
 
-  // Wait 5 seconds after ratings are loaded before checking for notifications
+  // Optional notification readiness effect
   useEffect(() => {
     if (!loading && Object.keys(ratings).length > 0) {
       const timer = setTimeout(() => {
@@ -163,16 +156,26 @@ function DropdownList({ visibility, setVisibility, name }) {
     }
   }, [loading, ratings]);
 
-  
-  
+  // ✅ New: Periodically refresh average ratings every 15 seconds
+  useEffect(() => {
+    if (!menuData) return;
+
+    const interval = setInterval(() => {
+      categories.forEach((category, index) => {
+        if (visibility[index] === 1) {
+          fetchAvgRatings(category);
+        }
+      });
+    }, 15000); // 15 seconds
+
+    return () => clearInterval(interval);
+  }, [menuData, visibility, fetchAvgRatings]);
 
   if (loading) return <Loading />;
 
   return (
     <>
       <HeaderCommon />
-
-
       <div className="dropdown">
         <ul className="dropdown_list">
           {categories.map((category, index) => (
