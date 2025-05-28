@@ -15,14 +15,24 @@ function HeaderCommon() {
         <div className="header_common">
             <h1 style={{ marginRight: '16px' }}>Menu Rating</h1>
             <button
-                onClick={() => setIsDarkMode(prev => !prev)}
-                className="theme_toggle"
-                aria-label="Toggle Dark Mode"
+            onClick={() => setIsDarkMode(prev => !prev)}
+            className="theme_toggle"
+            aria-label="Toggle Dark Mode"
             >
-                {isDarkMode ? '☀️ Light' : '🌙 Night'}
+            {isDarkMode ? (
+                <>
+                <span>☀️</span>
+                Light Mode
+                </>
+            ) : (
+                <>
+                <span>🌙</span>
+                Night Mode
+                </>
+            )}
             </button>
         </div>
-    );
+        );
 }
 
 export default HeaderCommon;
