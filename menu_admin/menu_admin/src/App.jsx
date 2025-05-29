@@ -48,13 +48,14 @@ function App() {
         <div className="login-panel">
           <h1>Menu Rating</h1>
           <Login />
-          <button className="signout" onClick={handleSignOut}>Sign out</button>
+          {/* Removed the signout button from here */}
         </div>
       )}
 
       <InstallPWAPopup />
     </div>
   );
+
 }
 
 export default App;
