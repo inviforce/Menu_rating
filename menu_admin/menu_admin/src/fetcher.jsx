@@ -11,7 +11,7 @@ async function GetMenuData(projectId, targetDate) {
 
   const data = await response.json();
   const documents = data.documents || [];
-
+  
   // Parse targetDate into a local Date object (year, monthIndex, day)
   const [year, month, day] = targetDate.split('-').map(Number);
   const target = new Date(year, month - 1, day);
@@ -24,10 +24,10 @@ async function GetMenuData(projectId, targetDate) {
 
     const innerFields = fields.Day.mapValue.fields;
     if (!innerFields || !innerFields.Day || !innerFields.Day.timestampValue) continue;
-
+    
     // Firestore timestamps are ISO strings — parse as local Date
     const firebaseDate = new Date(innerFields.Day.timestampValue);
-
+    console.log("hey",firebaseDate)
     // Compare year, month, and day to match the targetDate exactly
     if (
       firebaseDate.getFullYear() === target.getFullYear() &&
